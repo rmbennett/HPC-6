@@ -1,0 +1,13 @@
+bitecoin_protocol.hpp
+---
+BIGINT_LENGTH = 32;
+BIGINT_WORDS = BIGINT_LENGTH/4 = 8;
+
+bitecoin_hashing.hpp
+---
+NLIMBS = BIGINT_WORDS = 8;
+
+struct bigint_t
+{
+	uint32_t limbs[NLIMBS]; = uint32_t[8]
+};

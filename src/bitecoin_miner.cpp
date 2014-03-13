@@ -14,9 +14,17 @@ namespace bitecoin
 
 class cudaEndpointClient : public EndpointClient
 {
-    using EndpointClient::EndpointClient;
+    //using EndpointClient::EndpointClient; //C++11 only!
 
 public:
+
+	explicit cudaEndpointClient(std::string clientId,
+                                std::string minerId,
+                                std::unique_ptr<Connection> &conn,
+                                std::shared_ptr<ILog> &log) : EndpointClient(clientId,
+                                            minerId,
+                                            conn,
+                                            log) {};
 
     void MakeBid(
         const std::shared_ptr<Packet_ServerBeginRound> roundInfo,   // Information about this particular round
@@ -39,8 +47,11 @@ public:
             We will use this to track the best solution we have created so far.
         */
         std::vector<uint32_t> bestSolution(roundInfo->maxIndices);
-        bigint_t bestProof;
+        bigint_t bestProof; //uint32_t [8];
+        //set bestproof.limbs = 1's
         wide_ones(BIGINT_WORDS, bestProof.limbs);
+
+        double worst = pow(2.0, BIGINT_LENGTH * 8); // This is the worst possible score
 
         unsigned nTrials = 0;
         while (1)
@@ -62,7 +73,6 @@ public:
 
             if (wide_compare(BIGINT_WORDS, proof.limbs, bestProof.limbs) < 0)
             {
-                double worst = pow(2.0, BIGINT_LENGTH * 8); // This is the worst possible score
                 Log(Log_Verbose, "    Found new best, nTrials=%d, score=%lg, ratio=%lg.", nTrials, score, worst / score);
                 bestSolution = indices;
                 bestProof = proof;
