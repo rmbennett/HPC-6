@@ -37,4 +37,4 @@ connect_exchange : src/bitecoin_client
 	src/bitecoin_client client-$(USER) 3 tcp-client $(EXCHANGE_ADDR)  $(EXCHANGE_PORT)
 
 cuda_connect_exchange : src/bitecoin_miner
-	src/bitecoin_miner client-$(USER) 3 tcp-client $(EXCHANGE_ADDR)  $(EXCHANGE_PORT)
+	src/bitecoin_miner funkmaster-general 3 tcp-client $(EXCHANGE_ADDR)  $(EXCHANGE_PORT)
