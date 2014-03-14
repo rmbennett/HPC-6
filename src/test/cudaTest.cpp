@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <vector>
 
-#include "../contrib/fnv.hpp"
+#include "contrib/fnv.hpp"
 
 // Required to include CUDA vector types
 #include <cuda_runtime.h>

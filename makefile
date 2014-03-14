@@ -41,10 +41,10 @@ cuda_connect_exchange : src/bitecoin_miner
 
 #Build script to target evans' machine
 src/test/cudaTest.o :
-	nvcc -c -o src/test/cudaTest.o --compiler-options "-w" -I include/cudaInc/ src/test/cudaTest.cu
+	nvcc -c -o src/test/cudaTest.o --compiler-options "-w" -I include/ -I include/cudaInc src/test/cudaTest.cu
 
 src/test/cudaTest : src/test/cudaTest.o
-	g++ -g -o src/test/cudaTest -I include/cudaInc/ -L /opt/cuda/lib64/ -lcuda -lcudart src/test/cudaTest.cpp src/test/cudaTest.o
+	g++ -g -o src/test/cudaTest -I include/ -I include/cudaInc src/test/cudaTest.cpp src/test/cudaTest.o -L /opt/cuda/lib64/ -lcuda -lcudart
 	rm src/test/cudaTest.o
 
 rich_test_build : src/test/cudaTest
