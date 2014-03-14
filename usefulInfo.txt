@@ -1,7 +1,18 @@
+Compile with nvcc:
+nvcc --compiler-options "-std=c++11" -I include/ src/bitecoin_miner.cpp
+
+
 bitecoin_protocol.hpp
 ---
 BIGINT_LENGTH = 32;
 BIGINT_WORDS = BIGINT_LENGTH/4 = 8;
+
+uint64_t roundId;				// unique id associated with this round.
+uint64_t roundSalt;				// Random value chosen by the server
+std::vector<uint8_t> chainData;	// Chain data. On the wire consists of 64-bit length, followed by bytes of chain data
+uint32_t maxIndices;			// Maximum indices to return 
+uint32_t c[BIGINT_WORDS/2];		// Constant to use during hashing
+uint32_t hashSteps;
 
 bitecoin_hashing.hpp
 ---
