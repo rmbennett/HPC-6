@@ -10,6 +10,9 @@ Compile test stuff:
 
 	g++ -o program -I include/cudaInc/ -I /opt/cuda/include/ src/test/cudaTest.cpp cudaTest.o -L /opt/cuda/lib64/ -lcuda -lcudart
 
+Run and Build on DoC
+g++ -o cudaTest -I include/cudaInc/ src/test/cudaTest.cpp cudaTest.o -L /usr/lib/nvidia-331/ -L /usr/local/cuda/lib64/ -lcuda -lcudart
+
 
 bitecoin_protocol.hpp
 ---

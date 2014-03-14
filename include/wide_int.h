@@ -156,7 +156,7 @@ double wide_as_double(unsigned n, const uint32_t *x)
 {
 	double acc=0;
 	for(unsigned i=0;i<n;i++){
-		acc+=ldexp((double)x[i], i*32);
+		acc+=ldexp((double)x[i], i*32); //x[i]*e^(i*32)
 	}
 	return acc;
 }

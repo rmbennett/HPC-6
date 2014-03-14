@@ -71,7 +71,7 @@ public:
             double score = wide_as_double(BIGINT_WORDS, proof.limbs);
             Log(Log_Debug, "    Score=%lg", score);
 
-            if (wide_compare(BIGINT_WORDS, proof.limbs, bestProof.limbs) < 0)
+            if (wide_compare(BIGINT_WORDS, proof.limbs, bestProof.limbs) < 0) //Taken if proof < bestProof
             {
                 Log(Log_Verbose, "    Found new best, nTrials=%d, score=%lg, ratio=%lg.", nTrials, score, worst / score);
                 bestSolution = indices;
