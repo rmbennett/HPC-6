@@ -26,7 +26,7 @@ __global__ void cudaKernelTest(unsigned n, uint32_t *cmp0, uint32_t *cmp1, int *
 	int i;
 }
 
-extern "C" bool
+bool
 runTest(const int argc, const char **argv)
 {
 	return false;

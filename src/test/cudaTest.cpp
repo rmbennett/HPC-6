@@ -4,12 +4,10 @@
 #include <math.h>
 #include <assert.h>
 
-#include <stdint.h>
-
 // Required to include CUDA vector types
 #include <cuda_runtime.h>
 
-extern "C" bool
+extern bool
 runTest(const int argc, const char **argv);
 
 
