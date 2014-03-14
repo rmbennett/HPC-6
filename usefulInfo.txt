@@ -1,5 +1,14 @@
 Compile with nvcc:
-nvcc --compiler-options "-std=c++11" -I include/ src/bitecoin_miner.cpp
+	nvcc --compiler-options "-std=c++11" -I include/ src/bitecoin_miner.cpp
+
+Compile test stuff:
+1st compile cuda code, cudaTest.cu with
+
+	nvcc -c -I include/cudaInc/ src/test/cudaTest.cu
+
+2nd, compile main code (which calls the cuda code), cudaTest.cpp with
+
+	g++ -o program -I include/cudaInc/ -I /opt/cuda/include/ src/test/cudaTest.cpp cudaTest.o -L /opt/cuda/lib64/ -lcuda -lcudart
 
 
 bitecoin_protocol.hpp
