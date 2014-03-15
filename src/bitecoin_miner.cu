@@ -31,6 +31,7 @@ namespace bitecoin
 {
 bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t roundSalt, uint8_t *chainData, size_t chainDataCount, uint32_t maxIndices, uint32_t *randomSalt, uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof)
 {
+
 	//Define some sizes for arrays
 	size_t solutionSize = sizeof(uint32_t) * maxIndices;
 	size_t trialSolutionsSize = sizeof(uint32_t) * maxIndices * trialCount;
@@ -62,6 +63,7 @@ bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t round
 	checkCudaErrors(cudaMalloc((void **) &d_trialSolutions, trialSolutionsSize));
 	checkCudaErrors(cudaMalloc((void **) &d_randomSalt, randomSaltSize));
 	checkCudaErrors(cudaMalloc((void **) &d_chainData, chainDataSize));
+	checkCudaErrors(cudaMalloc((void **) &d_trialProofs, trialProofSize));
 
 	//Push buffers to GPU
 	checkCudaErrors(cudaMemcpy(d_trialSolutions, trialSolutions, trialSolutionsSize, cudaMemcpyHostToDevice));
@@ -83,7 +85,7 @@ bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t round
 
 	bool newBest = false;
 	//Check the results for a new best!
-	for (int trial = 0; trial < trialCount; trial++)
+	for (int trial = 0; trial < trialCount-1; trial++)
 	{
 		if(cuda_wide_compare(BIGINT_SIZE, trialProofs + (BIGINT_SIZE * trial), bestProof) < 0)
 		{
@@ -93,6 +95,14 @@ bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t round
 			newBest = true;
 		}
 	}
+
+    checkCudaErrors(cudaFree(d_trialSolutions));
+    checkCudaErrors(cudaFree(d_randomSalt));
+    checkCudaErrors(cudaFree(d_trialProofs));
+	checkCudaErrors(cudaFree(d_chainData));
+
+	free(trialSolutions);
+	free(trialProofs);
 
 	return newBest;
 }

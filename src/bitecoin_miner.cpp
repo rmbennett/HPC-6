@@ -92,6 +92,10 @@ public:
         }
 
         solution = bestSolution;
+        for (int i = 0; i < roundInfo->maxIndices; i++)
+        {
+            Log(Log_Debug, "Best Solution %d.", solution[i]);
+        }
         wide_copy(BIGINT_WORDS, pProof, bestProof.limbs);
 
         Log(Log_Verbose, "MakeBid - finish.");
