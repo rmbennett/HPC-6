@@ -43,6 +43,8 @@ template <int N> class fnv;
 #else
                 hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
 #endif
+                if (hval == 0)
+                    break;
             }
 
             /* return our new hash value */
@@ -95,6 +97,8 @@ template <int N> class fnv;
                 hval += (hval << 1) + (hval << 4) + (hval << 5) +
                 (hval << 7) + (hval << 8) + (hval << 40);
 #endif
+                if (hval == 0)
+                    break;
             }
 
             return m_offset = hval;

@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <csignal>
+#include <time.h>
 
 // CUDA runtime
 #include <cuda_runtime.h>
@@ -24,7 +25,9 @@
 namespace bitecoin
 {
 
-    extern bool runBitecoinMiningTrials(const size_t trialCount, const uint64_t roundId, const uint64_t roundSalt, const size_t chainDataCount, const uint32_t maxIndices, const uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof, size_t solutionSize, size_t trialProofSize, uint32_t *trialProofs, uint32_t *d_trialSolutions, uint32_t *d_randomSalt, uint32_t *d_trialProofs, uint8_t *d_chainData);
+    extern int runBitecoinMiningTrials(const size_t trialCount, const uint64_t roundId, const uint64_t roundSalt, const size_t chainDataCount, const uint32_t maxIndices, const uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof, size_t solutionSize, size_t trialProofSize, uint32_t *trialProofs, uint32_t *d_trialSolutions, uint32_t *d_randomSalt, uint32_t *d_trialProofs, uint8_t *d_chainData);
+
+    // extern void setupRandom(size_t trialCount, curandState *d_curand);
 
 class cudaEndpointClient : public EndpointClient
 {
@@ -49,7 +52,7 @@ public:
         uint32_t *pProof                                                                        // Will contain the "proof", which is just the value
     )
     {
-        double tSafetyMargin = 0.85; // accounts for uncertainty in network conditions
+        double tSafetyMargin = 1.0; // accounts for uncertainty in network conditions
         /* This is when the server has said all bids must be produced by, plus the
             adjustment for clock skew, and the safety margin
         */
@@ -69,18 +72,16 @@ public:
 
         //For use on GPU
         //Define some sizes for arrays
-        size_t trialCount = 512;
+        size_t trialCount = 128;
         size_t solutionSize = sizeof(uint32_t) * roundInfo->maxIndices;
         size_t trialSolutionsSize = sizeof(uint32_t) * roundInfo->maxIndices * trialCount;
-        size_t proofSize = sizeof(uint32_t) * BIGINT_SIZE;
         size_t trialProofSize = sizeof(uint32_t) * BIGINT_SIZE * trialCount;
         size_t randomSaltSize = sizeof(uint32_t) * SALT_SIZE;
         size_t chainDataSize = sizeof(uint8_t) * roundInfo->chainData.size();
 
         //Create CPU Buffers
-        // uint32_t *trialSolutions = (uint32_t *)malloc(trialSolutionsSize);
-        uint32_t *trialProofs = (uint32_t *)malloc(trialProofSize);
         uint32_t *trialSolutions = (uint32_t *)malloc(trialSolutionsSize);
+        uint32_t *trialProofs = (uint32_t *)malloc(trialProofSize);
 
         //Allocate GPU Buffers
         uint32_t *d_trialSolutions, *d_randomSalt, *d_trialProofs;
@@ -98,8 +99,11 @@ public:
         checkCudaErrors(cudaMemcpy(d_randomSalt, (const void*)&roundInfo->c[0], randomSaltSize, cudaMemcpyHostToDevice));
         checkCudaErrors(cudaMemcpy(d_chainData, (const void*)&roundInfo->chainData[0], chainDataSize, cudaMemcpyHostToDevice));
 
+        // setupRandom(trialCount, d_curand);
+        srand(time(NULL));
+
         unsigned nTrials = 0;
-        while (1)
+        while ((tFinish - now() * 1e-9) > 0)
         {
             nTrials++;
 
@@ -108,21 +112,27 @@ public:
                 uint32_t curr = 0;
                 for (int index = 0; index < roundInfo->maxIndices; index++)
                 {
-                    curr += 1 + (rand() % 100);
+                    curr += 1 + (rand() % 10);
                     trialSolutions[(trial * roundInfo->maxIndices) + index] = curr;
                 }
             }
 
             checkCudaErrors(cudaMemcpy(d_trialSolutions, trialSolutions, trialSolutionsSize, cudaMemcpyHostToDevice));
 
-            runBitecoinMiningTrials(trialCount, roundInfo->roundId, roundInfo->roundSalt, roundInfo->chainData.size(), roundInfo->maxIndices, roundInfo->hashSteps, &bestSolution[0], &bestProof.limbs[0], solutionSize, trialProofSize, trialProofs, d_trialSolutions, d_randomSalt, d_trialProofs, d_chainData);
+            int best = runBitecoinMiningTrials(trialCount, roundInfo->roundId, roundInfo->roundSalt, roundInfo->chainData.size(), roundInfo->maxIndices, roundInfo->hashSteps, &bestSolution[0], &bestProof.limbs[0], solutionSize, trialProofSize, trialProofs, d_trialSolutions, d_randomSalt, d_trialProofs, d_chainData);
 
-            double t = now() * 1e-9; // Work out where we are against the deadline
-            double timeBudget = tFinish - t;
-            Log(Log_Debug, "Finish trial %d, time remaining =%lg seconds.", nTrials, timeBudget);
+            if (best > 0)
+            {
+                Log(Log_Verbose, "    Found new best, score=%lg.\n", wide_as_double(BIGINT_SIZE, bestProof.limbs));
+                checkCudaErrors(cudaMemcpy(&bestSolution[0], d_trialSolutions + (roundInfo->maxIndices * best), solutionSize, cudaMemcpyDeviceToHost));
+            }
 
-            if (timeBudget <= 0)
-                break;  // We have run out of time, send what we have
+            // double t = now() * 1e-9; // Work out where we are against the deadline
+            // double timeBudget = tFinish - t;
+            // Log(Log_Debug, "Finish trial %d, time remaining =%lg seconds.", nTrials, timeBudget);
+
+            // if (timeBudget <= 0)
+            //     break;  // We have run out of time, send what we have
         }
 
         free(trialProofs);
