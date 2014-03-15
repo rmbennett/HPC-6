@@ -36,6 +36,14 @@ cuda_connect_local : src/bitecoin_miner
 connect_exchange : src/bitecoin_client
 	src/bitecoin_client client-$(USER) 3 tcp-client $(EXCHANGE_ADDR)  $(EXCHANGE_PORT)
 
+# Cuda bitecoin_miner :))
+src/bitecoin_miner.o :
+	nvcc -c -gencode=arch=compute_20,code=\"sm_20,compute_20\" -I include/ -I  include/cudaInc/ src/bitecoin_miner.cu -o src/bitecoin_miner.o
+
+src/bitecoin_miner : src/bitecoin_miner.o
+	g++ -g -o src/bitecoin_miner -std=c++11 -I include/ -I include/cudaInc src/bitecoin_miner.cpp src/bitecoin_miner.o -L /opt/cuda/lib64/ -lcuda -lcudart
+	rm src/bitecoin_miner.o
+
 cuda_connect_exchange : src/bitecoin_miner
 	src/bitecoin_miner funkmaster-general 3 tcp-client $(EXCHANGE_ADDR)  $(EXCHANGE_PORT)
 

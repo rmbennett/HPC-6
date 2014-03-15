@@ -12,6 +12,8 @@
 namespace bitecoin
 {
 
+    extern bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t roundSalt, uint8_t *chainData, size_t chainDataCount, uint32_t maxIndices, uint32_t *randomSalt, uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof);
+
 class cudaEndpointClient : public EndpointClient
 {
     //using EndpointClient::EndpointClient; //C++11 only!
@@ -59,24 +61,27 @@ public:
             ++nTrials;
 
             Log(Log_Debug, "Trial %d.", nTrials);
-            std::vector<uint32_t> indices(roundInfo->maxIndices);
-            uint32_t curr = 0;
-            for (unsigned j = 0; j < indices.size(); j++)
-            {
-                curr = curr + 1 + (rand() % 10);
-                indices[j] = curr;
-            }
 
-            bigint_t proof = HashReference(roundInfo.get(), indices.size(), &indices[0]);
-            double score = wide_as_double(BIGINT_WORDS, proof.limbs);
-            Log(Log_Debug, "    Score=%lg", score);
+            runBitecoinMiningTrials(128, roundInfo->roundId, roundInfo->roundSalt, (uint8_t *)&roundInfo->chainData[0], roundInfo->chainData.size(), roundInfo->maxIndices, (uint32_t *) &roundInfo->roundSalt, roundInfo->hashSteps, &bestSolution[0], bestProof.limbs);
 
-            if (wide_compare(BIGINT_WORDS, proof.limbs, bestProof.limbs) < 0) //Taken if proof < bestProof
-            {
-                Log(Log_Verbose, "    Found new best, nTrials=%d, score=%lg, ratio=%lg.", nTrials, score, worst / score);
-                bestSolution = indices;
-                bestProof = proof;
-            }
+            // std::vector<uint32_t> indices(roundInfo->maxIndices);
+            // uint32_t curr = 0;
+            // for (unsigned j = 0; j < indices.size(); j++)
+            // {
+            //     curr = curr + 1 + (rand() % 10);
+            //     indices[j] = curr;
+            // }
+
+            // bigint_t proof = HashReference(roundInfo.get(), indices.size(), &indices[0]);
+            // double score = wide_as_double(BIGINT_WORDS, proof.limbs);
+            // Log(Log_Debug, "    Score=%lg", score);
+
+            // if (wide_compare(BIGINT_WORDS, proof.limbs, bestProof.limbs) < 0) //Taken if proof < bestProof
+            // {
+            //     Log(Log_Verbose, "    Found new best, nTrials=%d, score=%lg, ratio=%lg.", nTrials, score, worst / score);
+            //     bestSolution = indices;
+            //     bestProof = proof;
+            // }
 
             double t = now() * 1e-9; // Work out where we are against the deadline
             double timeBudget = tFinish - t;
