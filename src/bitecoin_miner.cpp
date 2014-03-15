@@ -12,7 +12,7 @@
 namespace bitecoin
 {
 
-    extern bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t roundSalt, uint8_t *chainData, size_t chainDataCount, uint32_t maxIndices, uint32_t *randomSalt, uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof);
+    extern bool runBitecoinMiningTrials(const size_t trialCount, const uint64_t roundId, const uint64_t roundSalt, const uint8_t *chainData, const size_t chainDataCount, const uint32_t maxIndices, const uint32_t *randomSalt, const uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof);
 
 class cudaEndpointClient : public EndpointClient
 {
@@ -62,7 +62,9 @@ public:
 
             Log(Log_Debug, "Trial %d.", nTrials);
 
-            runBitecoinMiningTrials(128, roundInfo->roundId, roundInfo->roundSalt, (uint8_t *)&roundInfo->chainData[0], roundInfo->chainData.size(), roundInfo->maxIndices, (uint32_t *) &roundInfo->roundSalt, roundInfo->hashSteps, &bestSolution[0], bestProof.limbs);
+            // Log(Log_Verbose, "Round Params: Round id %d roundSalt %d ChainData %d %d %d %d chainDataSize %d maxIndices %d roundSalt %d hashSteps %d.", roundInfo->roundId, roundInfo->roundSalt, roundInfo->chainData[0], roundInfo->chainData[1], roundInfo->chainData[2], roundInfo->chainData[3], roundInfo->chainData.size(), roundInfo->maxIndices, roundInfo->hashSteps);
+
+            runBitecoinMiningTrials(512, roundInfo->roundId, roundInfo->roundSalt, (uint8_t *)&roundInfo->chainData[0], roundInfo->chainData.size(), roundInfo->maxIndices, (uint32_t *) roundInfo->c, roundInfo->hashSteps, &bestSolution[0], &bestProof.limbs[0]);
 
             // std::vector<uint32_t> indices(roundInfo->maxIndices);
             // uint32_t curr = 0;
@@ -72,7 +74,13 @@ public:
             //     indices[j] = curr;
             // }
 
-            // bigint_t proof = HashReference(roundInfo.get(), indices.size(), &indices[0]);
+            bigint_t CPUproof = HashReference(roundInfo.get(), bestSolution.size(), &bestSolution[0]);
+
+            // Log(Log_Verbose, "bestSolution %d %d %d %d %d %d %d %d", bestSolution[0], bestSolution[1], bestSolution[2], bestSolution[3], bestSolution[4], bestSolution[5], bestSolution[6], bestSolution[7]);
+            // Log(Log_Verbose, "CPUproof %d %d %d %d %d %d %d %d", CPUproof.limbs[0], CPUproof.limbs[1], CPUproof.limbs[2], CPUproof.limbs[3], CPUproof.limbs[4], CPUproof.limbs[5], CPUproof.limbs[6], CPUproof.limbs[7]);
+            // Log(Log_Verbose, "GPU proof CPU side %d %d %d %d %d %d %d %d", bestProof.limbs[0], bestProof.limbs[1], bestProof.limbs[2], bestProof.limbs[3], bestProof.limbs[4], bestProof.limbs[5], bestProof.limbs[6], bestProof.limbs[7]);
+
+            // assert(wide_compare(BIGINT_LENGTH, bestProof.limbs, CPUproof.limbs) == 0);
             // double score = wide_as_double(BIGINT_WORDS, proof.limbs);
             // Log(Log_Debug, "    Score=%lg", score);
 

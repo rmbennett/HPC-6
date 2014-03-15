@@ -38,7 +38,7 @@ connect_exchange : src/bitecoin_client
 
 # Cuda bitecoin_miner :))
 src/bitecoin_miner.o :
-	nvcc -c -gencode=arch=compute_20,code=\"sm_20,compute_20\" -I include/ -I  include/cudaInc/ src/bitecoin_miner.cu -o src/bitecoin_miner.o
+	nvcc -c -g -G -gencode=arch=compute_20,code=\"sm_20,compute_20\" -I include/ -I  include/cudaInc/ src/bitecoin_miner.cu -o src/bitecoin_miner.o
 
 src/bitecoin_miner : src/bitecoin_miner.o
 	g++ -g -o src/bitecoin_miner -std=c++11 -I include/ -I include/cudaInc src/bitecoin_miner.cpp src/bitecoin_miner.o -L /opt/cuda/lib64/ -lcuda -lcudart

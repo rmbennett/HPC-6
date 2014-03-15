@@ -1,4 +1,11 @@
 #include <stdint.h>
+#include <iostream>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <csignal>
 
 // CUDA runtime
 #include <cuda_runtime.h>
@@ -13,23 +20,17 @@ __global__ void computeTrials(const uint64_t roundId, const uint64_t roundSalt, 
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	//Make local copy of the solution
-	uint32_t *solution = new uint32_t[maxIndices];
 	uint32_t proof[BIGINT_SIZE];
 
-	cuda_wide_copy(maxIndices, solution, trialSolutions + (maxIndices * i));
-
-	HashReference(roundId, roundSalt, chainData, chainDataCount, maxIndices, randomSalt, hashSteps, solution, proof);
+	HashReference(roundId, roundSalt, chainData, chainDataCount, maxIndices, randomSalt, hashSteps, trialSolutions + (i*maxIndices), &proof[0]);
 
 	cuda_wide_copy(BIGINT_SIZE, trialProofs + (BIGINT_SIZE * i), &proof[0]);
-
-	delete[] solution;
 
 }
 
 namespace bitecoin
 {
-bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t roundSalt, uint8_t *chainData, size_t chainDataCount, uint32_t maxIndices, uint32_t *randomSalt, uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof)
+bool runBitecoinMiningTrials(const size_t trialCount, const uint64_t roundId, const uint64_t roundSalt, const uint8_t *chainData, const size_t chainDataCount, const uint32_t maxIndices, const uint32_t *randomSalt, const uint32_t hashSteps, uint32_t *bestSolution, uint32_t *bestProof)
 {
 
 	//Define some sizes for arrays
@@ -49,10 +50,10 @@ bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t round
 	for (int trial = 0; trial < trialCount; trial++)
 	{
 		uint32_t curr = 0;
-		for (int limb = 0; limb < BIGINT_SIZE; limb++)
+		for (int index = 0; index < maxIndices; index++)
 		{
-			curr = curr + 1 + (rand() % 10);
-            trialSolutions[(trial * BIGINT_SIZE) + limb] = curr;
+			curr += 1 + (rand() % 10);
+            trialSolutions[(trial * maxIndices) + index] = curr;
 		}
 	}
 
@@ -85,12 +86,12 @@ bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t round
 
 	bool newBest = false;
 	//Check the results for a new best!
-	for (int trial = 0; trial < trialCount-1; trial++)
+	for (int trial = 0; trial < trialCount; trial++)
 	{
 		if(cuda_wide_compare(BIGINT_SIZE, trialProofs + (BIGINT_SIZE * trial), bestProof) < 0)
 		{
 			cuda_wide_copy(maxIndices, bestSolution, trialSolutions + (maxIndices * trial));
-			cuda_wide_copy(BIGINT_SIZE, bestProof, trialProofs + (BIGINT_SIZE * trial));
+			cuda_wide_copy(BIGINT_SIZE + 1, bestProof, trialProofs + (BIGINT_SIZE * trial));
 			printf("    Found new best, score=%lg.\n", cuda_wide_as_double(BIGINT_SIZE, bestProof));
 			newBest = true;
 		}
@@ -103,6 +104,10 @@ bool runBitecoinMiningTrials(size_t trialCount, uint64_t roundId, uint64_t round
 
 	free(trialSolutions);
 	free(trialProofs);
+
+	// printf("bestProof %d %d %d %d %d %d %d %d\n", bestProof[0], bestProof[1],bestProof[2],bestProof[3],bestProof[4],bestProof[5],bestProof[6],bestProof[7]);
+
+	// printf("BestSolution %d %d %d %d %d %d %d %d\n", bestSolution[0], bestSolution[1],bestSolution[2],bestSolution[3],bestSolution[4],bestSolution[5],bestSolution[6],bestSolution[7]);
 
 	return newBest;
 }

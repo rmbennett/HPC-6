@@ -18,11 +18,11 @@ __device__ 	void PoolHashStep(uint32_t *x, const uint32_t *randomSalt)
 {	
 	uint32_t tmp[BIGINT_SIZE];
 	// tmp=lo(x)*c;
-	cuda_wide_mul(4, &tmp[0]+4, &tmp[0], &x[0], randomSalt);
+	cuda_wide_mul(4, &tmp[4], &tmp[0], &x[0], randomSalt);
 	// [carry,lo(x)] = lo(tmp)+hi(x)
-	uint32_t carry=cuda_wide_add(4, &x[0], &tmp[0], &x[0]+4);
+	uint32_t carry=cuda_wide_add(4, &x[0], &tmp[0], &x[4]);
 	// hi(x) = hi(tmp) + carry
-	cuda_wide_add(4, &x[0]+4, &tmp[0]+4, carry);
+	cuda_wide_add(4, &x[0]+4, &tmp[4], carry);
 	
 	// overall:  tmp=lo(x)*c; x=tmp>hi(x)
 }
@@ -31,16 +31,16 @@ __device__ void PoolHash(const uint64_t roundId, const uint64_t roundSalt, const
 {
 
 	fnv<64> hasher;
-	uint64_t chainHash=hasher((const char*)randomSalt, chainDataCount);
+	uint64_t chainHash=hasher((const char*)chainData, chainDataCount);
 	
 	// The value x is 8 words long (8*32 bits in total)
 	// We build (MSB to LSB) as  [ chainHash ; roundSalt ; roundId ; index ]
 	uint32_t x[BIGINT_SIZE];
 	cuda_wide_zero(BIGINT_SIZE, &x[0]);
 	cuda_wide_add(BIGINT_SIZE, &x[0], &x[0], index);	//chosen index goes in at two low limbs
-	cuda_wide_add(6, &x[0] + 2, &x[0]+2, roundId);	// Round goes in at limbs 3 and 2
-	cuda_wide_add(4, &x[0]+4, &x[0]+4, roundSalt);	// Salt goes in at limbs 5 and 4
-	cuda_wide_add(2, &x[0]+6, &x[0]+6, chainHash);	// chainHash at limbs 7 and 6
+	cuda_wide_add(6, &x[2], &x[2], roundId);	// Round goes in at limbs 3 and 2
+	cuda_wide_add(4, &x[4], &x[4], roundSalt);	// Salt goes in at limbs 5 and 4
+	cuda_wide_add(2, &x[6], &x[6], chainHash);	// chainHash at limbs 7 and 6
 	
 	// Now step forward by the number specified by the server
 	for(unsigned j=0; j< hashSteps; j++){
